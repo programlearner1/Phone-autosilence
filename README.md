@@ -1,123 +1,52 @@
+GeoFence App
 
----
+GeoFence App is a location-based web application that allows users to manage geofenced areas, trigger specific actions like silencing the phone or sending messages when entering or exiting these areas, and manage recipient details for notifications.
 
-## **Development Plan**
+Features
 
-### **1. Project Overview**
-**App Name**: Phone Auto Silencer  
-**Purpose**: Automate phone mode switching (Silent/General) based on user-defined geolocations.  
+Add geofenced locations with a specified radius.
 
----
+Monitor current location and trigger actions based on proximity to geofenced areas.
 
-### **2. Features**
-1. **Core Features**:
-   - Detect the phone's current location using GPS.
-   - Automatically switch to Silent mode when entering a specific location.
-   - Automatically revert to General mode when exiting the location.
-   - Allow users to add, customize, and remove locations for automatic mode switching.
+Manage recipients for notifications.
 
-2. **Additional Features** (Optional for future versions):
-   - Schedule-based silent mode (e.g., silent at specific times).
-   - Integration with a map interface for location selection.
-   - Notifications or reminders when a mode change occurs.
-   - Battery optimization for location tracking.
+Firebase integration for real-time data storage.
 
----
+Google Maps integration for selecting locations.
 
-### **3. Requirements**
+Prerequisites
 
-#### **Functional Requirements**:
-- Access and use location services on the device.
-- Store user-defined geolocations.
-- Monitor and trigger mode changes based on geofencing.
+Before running this project, ensure the following are installed:
 
-#### **Non-Functional Requirements**:
-- Minimal battery and resource usage.
-- Easy-to-use and intuitive interface.
-- Robust privacy and security measures (no data sharing without user consent).
+Node.js (https://nodejs.org/)
 
-#### **Regulatory Requirements**:
-- Comply with GDPR, CCPA, or relevant data privacy laws.
-- Obtain explicit user permission for location and notification access.
+npm (comes with Node.js)
 
----
+Git (optional for version control)
 
-### **4. Technology Stack**
+Firebase Project with Firestore enabled.
 
-#### **Domains**:
-- **Mobile Development**  
-- **Location-based Services**  
-- **Data Privacy and Security**  
+Google Maps API Key from the Google Cloud Console.
 
-#### **Languages**:
-- **Frontend**:  
-  - **Kotlin** for Android (or Java, but Kotlin is recommended for modern development).  
-  - **Swift** for iOS (if cross-platform, use Flutter or React Native).
-- **Backend (if needed)**:
-  - **Node.js** or **Firebase** (for managing user data if external storage is required).  
-  - **SQLite** (for local storage on the device).
+Future Enhancements
 
-#### **Tools and Frameworks**:
-- **Android**:
-  - Android Studio (IDE).
-  - Google Play Services for geofencing and location APIs.
-- **iOS**:
-  - Xcode (IDE).
-  - CoreLocation framework for geofencing.
-- **Cross-Platform**:
-  - Flutter or React Native (to reduce development time).  
-- **Design**:
-  - Figma or Adobe XD for UI/UX design.
-- **Testing**:
-  - Firebase Test Lab for testing across devices.
-  - Android Emulator and iOS Simulator.
-- **Version Control**:
-  - Git (GitHub or GitLab for repositories).  
+Add offline support using Firebase offline capabilities.
 
----
+Convert to a mobile application using React Native or Expo.
 
-### **5. Development Milestones and Time Periods**
+Enable push notifications for actions.
 
-| **Phase**                  | **Tasks**                                                                                  | **Duration** |
-|----------------------------|--------------------------------------------------------------------------------------------|--------------|
-| **1. Requirement Analysis** | Finalize features, workflows, and permissions.                                             | 1 Week       |
-| **2. UI/UX Design**         | Create app wireframes and UI/UX designs.                                                   | 2 Weeks      |
-| **3. Core Development**     |                                                                                           |              |
-| **a. Frontend**             | - Build screens for location selection and mode customization.                            | 2 Weeks      |
-| **b. Backend (if needed)**  | - Set up a database and APIs for user data.                                               | 1 Week       |
-| **c. Location Tracking**    | - Integrate geofencing APIs and implement silent/general mode switching.                  | 3 Weeks      |
-| **4. Testing**              | Functional testing, battery optimization, and debugging.                                  | 2 Weeks      |
-| **5. Deployment**           | Publish the app on Google Play Store (and App Store if cross-platform).                   | 1 Week       |
+Add real-time location tracking on a map using Google Maps API.
 
-**Total Time Estimate**: ~2 Months  
+License
 
----
+This project is licensed under the MIT License.
 
-### **6. Key Considerations**
+Contributions
 
-#### **User Privacy**:
-- The app should explicitly request location permissions and explain how the data will be used.  
-- Avoid sharing or storing location data on external servers unless explicitly necessary.
+Contributions are welcome! Feel free to fork the repository and submit a pull request.
 
-#### **Battery Optimization**:
-- Use geofencing instead of constant location tracking to reduce battery consumption.
-- Enable users to turn off the service when not needed.
+Support
 
-#### **Scalability**:
-- Use cross-platform frameworks (e.g., Flutter) if planning to expand to iOS in the future.  
+For support, please create an issue in this repository or contact [pavan02.mail@gmail.com].
 
-#### **Testing & Quality Assurance**:
-- Perform thorough testing on multiple device models.
-- Include edge cases such as GPS unavailability or permission denial.
-
----
-
-### **7. Potential Challenges and Solutions**
-| **Challenge**                          | **Solution**                                                                                       |
-|----------------------------------------|---------------------------------------------------------------------------------------------------|
-| High battery usage                     | Optimize geofencing instead of continuous GPS tracking.                                           |
-| Location inaccuracy                    | Use high-accuracy location settings and fallback mechanisms.                                      |
-| Privacy concerns                       | Clearly inform users about data usage and comply with privacy laws.                               |
-| Handling location-based errors         | Test extensively under different network and location scenarios.                                  |
-
----
