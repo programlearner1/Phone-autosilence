@@ -1,0 +1,134 @@
+/* Resetting some default browser styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* Basic styling for the body */
+  body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f9fafb;
+    color: #333;
+    line-height: 1.5;
+  }
+  
+  /* Container to center content */
+  .container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  /* Header styling */
+  h1, h2 {
+    color: #2d3748;
+    font-weight: bold;
+  }
+  
+  /* Styling for buttons */
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+  
+  button:hover {
+    opacity: 0.8;
+  }
+  
+  /* Button colors */
+  .bg-blue-500 {
+    background-color: #4299e1;
+    color: white;
+  }
+  
+  .bg-green-500 {
+    background-color: #48bb78;
+    color: white;
+  }
+  
+  .bg-red-500 {
+    background-color: #f56565;
+    color: white;
+  }
+  
+  /* Input styling */
+  input[type="number"], input[type="text"] {
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 10px;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  input[type="number"]:focus, input[type="text"]:focus {
+    outline: none;
+    border-color: #4299e1;
+  }
+  
+  /* Styling for lists */
+  ul {
+    list-style-type: none;
+  }
+  
+  li {
+    background-color: #ffffff;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+  }
+  
+  /* Map container */
+  #map {
+    width: 100%;
+    height: 400px;
+    border-radius: 8px;
+  }
+  
+  /* Styling for cards and boxes */
+  .card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* General layout for forms */
+  form {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Layout for the map and form */
+  .map-container {
+    height: 400px; /* Set a fixed height for the map */
+    width: 100%; /* Make it responsive to the parent container */
+    border: 2px solid #ddd; /* Optional: For better visual structure */
+    border-radius: 8px; /* Optional: Rounded corners */
+    overflow: hidden; /* Prevent any overflow issues */
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow for better aesthetics */
+  } 
+  .map-container > div {
+    width: 48%;
+  }
+  
+  /* Responsiveness for smaller screens */
+  @media (max-width: 768px) {
+    .map-container {
+      flex-direction: column;
+    }
+  
+    .map-container > div {
+      width: 100%;
+    }
+  }
+  
+  
