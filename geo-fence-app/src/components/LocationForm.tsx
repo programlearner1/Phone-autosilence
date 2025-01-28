@@ -60,6 +60,9 @@ const LocationForm: React.FC = () => {
         if (accuracy <= 50) {
           setLocation((prev) => ({ ...prev, latitude, longitude }));
           fetchAddress(latitude, longitude);
+          if (mapRef.current) {
+            mapRef.current.setView([latitude, longitude], 15); // Center and zoom in
+          }
         } else {
           setError("Location accuracy is too low. Please try again.");
         }
@@ -109,15 +112,15 @@ const LocationForm: React.FC = () => {
     <div className="form-container">
       <div className="map-container">
       <MapContainer
-  center={[location.latitude, location.longitude]}
-  zoom={15}
-  style={{ width: "100%", height: "400px", borderRadius: "8px" }}
-  ref={(mapInstance) => {
-    if (mapInstance && !mapRef.current) {
-      mapRef.current = mapInstance; // Assign the map instance to the ref
-    }
-  }}
->
+        center={[location.latitude, location.longitude]}
+        zoom={15}
+        style={{ width: "100%", height: "400px", borderRadius: "8px" }}
+        ref={(mapInstance) => {
+          if (mapInstance && !mapRef.current) {
+            mapRef.current = mapInstance; // Assign the map instance to the ref
+          }
+      }}
+  >
   <TileLayer
     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -128,6 +131,7 @@ const LocationForm: React.FC = () => {
     eventHandlers={{
       dragend: (event) => {
         const latLng = event.target.getLatLng();
+    
         setLocation((prev) => ({
           ...prev,
           latitude: latLng.lat,
