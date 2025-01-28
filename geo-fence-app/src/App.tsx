@@ -16,9 +16,9 @@ const App: React.FC = () => {
             <LocationList />
           </div>
           {/* Right Side: Map */}
-          <div className="map-container">
+          {/*<div className="map-container">
             <Map />
-          </div>
+          </div>*/}
         </div>
       </div>
     </LocationProvider>
