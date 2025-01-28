@@ -49,43 +49,34 @@ const LocationForm: React.FC = () => {
   };
 
   // Get current location
-  // Get current location
-const getCurrentLocation = () => {
-  setLoading(true);
-  setError(null);
+  const getCurrentLocation = () => {
+    setLoading(true);
+    setError(null);
 
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const { latitude, longitude, accuracy } = position.coords;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
 
-      if (accuracy <= 50) { // Accuracy threshold
-        setLocation((prev) => ({ ...prev, latitude, longitude }));
-
-        // Fetch the address
-        fetchAddress(latitude, longitude);
-
-        // Move the map to the user's location and zoom in
-        if (mapRef.current) {
-          mapRef.current.setView([latitude, longitude], 15); // Zoom level 15
+        if (accuracy <= 50) {
+          setLocation((prev) => ({ ...prev, latitude, longitude }));
+          fetchAddress(latitude, longitude);
+        } else {
+          setError("Location accuracy is too low. Please try again.");
         }
-      } else {
-        setError("Location accuracy is too low. Please try again.");
+
+        setLoading(false);
+      },
+      (error) => {
+        setError("Unable to retrieve location. Please enable location services.");
+        setLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
       }
-
-      setLoading(false);
-    },
-    (error) => {
-      setError("Unable to retrieve location. Please enable location services.");
-      setLoading(false);
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
-    }
-  );
-};
-
+    );
+  };
 
   // Handle marker drag
   const handleMarkerDragEnd = (e: any) => {
@@ -119,7 +110,7 @@ const getCurrentLocation = () => {
       <div className="map-container">
       <MapContainer
   center={[location.latitude, location.longitude]}
-  zoom={15}  // Default zoom level for the map
+  zoom={15}
   style={{ width: "100%", height: "400px", borderRadius: "8px" }}
   ref={(mapInstance) => {
     if (mapInstance && !mapRef.current) {
@@ -132,10 +123,17 @@ const getCurrentLocation = () => {
     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   />
   <Marker
-    position={[location.latitude, location.longitude]} // Place pin at the current location
+    position={[location.latitude, location.longitude]}
     draggable={true}
     eventHandlers={{
-      dragend: handleMarkerDragEnd,
+      dragend: (event) => {
+        const latLng = event.target.getLatLng();
+        setLocation((prev) => ({
+          ...prev,
+          latitude: latLng.lat,
+          longitude: latLng.lng,
+        }));
+      },
     }}
   >
     <Popup>
@@ -144,7 +142,6 @@ const getCurrentLocation = () => {
     </Popup>
   </Marker>
 </MapContainer>
-
 
       </div>
 
