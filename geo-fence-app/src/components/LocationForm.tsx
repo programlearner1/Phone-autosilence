@@ -97,24 +97,31 @@ const LocationForm: React.FC = () => {
   };
 
   // Save location and send SMS
-  const saveLocation = () => {
-    if (!location.latitude || !location.longitude || !location.recipients) {
-      alert("Fill all required fields.");
-      return;
-    }
+ // Save location and send SMS
+const saveLocation = () => {
+  if (!location.latitude || !location.longitude || !location.recipients) {
+    alert("Fill all required fields.");
+    return;
+  }
 
-    const newLocation = { ...location };
-    const updatedLocations = [...locations, newLocation];
+  const newLocation = { ...location };
+  const updatedLocations = [...locations, newLocation];
 
-    try {
-      localStorage.setItem("locations", JSON.stringify(updatedLocations));
-      setLocations(updatedLocations);
-      sendSMS(location.recipients, `You have added a new location at ${location.address}.`);
+  try {
+    localStorage.setItem("locations", JSON.stringify(updatedLocations));
+    setLocations(updatedLocations);
+
+    // Send SMS only if "Send Message" checkbox is checked
+    if (location.sendMsg && location.message.trim() !== "") {
+      sendSMS(location.recipients, location.message);
       alert("Location saved and SMS sent!");
-    } catch (error) {
-      console.error("Error saving location:", error);
+    } else {
+      alert("Location saved successfully!");
     }
-  };
+  } catch (error) {
+    console.error("Error saving location:", error);
+  }
+};
 
   // Send SMS
   const sendSMS = (recipients: string | string[], message: string) => {
