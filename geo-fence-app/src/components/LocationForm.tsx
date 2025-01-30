@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button, TextField, Checkbox, FormControlLabel, CircularProgress } from "@mui/material";
 import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -26,13 +26,27 @@ const LocationForm: React.FC = () => {
     silence: false,
     sendMsg: false,
     message: "",
-    recipients: [],
+    recipients: "",
   });
+
+  const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<any>(null);
 
-  // Function to fetch address
+  useEffect(() => {
+    loadLocations();
+  }, []);
+
+  // Load saved locations from localStorage
+  const loadLocations = () => {
+    const storedLocations = localStorage.getItem("locations");
+    if (storedLocations) {
+      setLocations(JSON.parse(storedLocations));
+    }
+  };
+
+  // Fetch address from coordinates
   const fetchAddress = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
@@ -45,11 +59,11 @@ const LocationForm: React.FC = () => {
         setError("Unable to fetch address. Please try again.");
       }
     } catch (err) {
-      setError("Error fetching address. Please check your internet connection.");
+      setError("Error fetching address. Check internet connection.");
     }
   };
 
-  // Function to get user's current location
+  // Get user's current location
   const getCurrentLocation = () => {
     setLoading(true);
     setError(null);
@@ -63,12 +77,12 @@ const LocationForm: React.FC = () => {
             mapRef.current.setView([latitude, longitude], 16);
           }
         } else {
-          setError("Location accuracy is too low. Please try again.");
+          setError("Location accuracy is too low. Try again.");
         }
         setLoading(false);
       },
       (error) => {
-        setError("Unable to retrieve location. Please enable location services.");
+        setError("Unable to retrieve location. Enable location services.");
         setLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -82,13 +96,31 @@ const LocationForm: React.FC = () => {
     fetchAddress(lat, lng);
   };
 
-  // Function to send custom message to selected contacts
-  const sendMessage = () => {
-    if (location.sendMsg && location.recipients.length > 0) {
-      location.recipients.forEach((contact) => {
-        console.log(`Sending message to ${contact}: ${location.message}`);
-      });
+  // Save location and send SMS
+  const saveLocation = () => {
+    if (!location.latitude || !location.longitude || !location.recipients) {
+      alert("Fill all required fields.");
+      return;
     }
+
+    const newLocation = { ...location };
+    const updatedLocations = [...locations, newLocation];
+
+    try {
+      localStorage.setItem("locations", JSON.stringify(updatedLocations));
+      setLocations(updatedLocations);
+      sendSMS(location.recipients, `You have added a new location at ${location.address}.`);
+      alert("Location saved and SMS sent!");
+    } catch (error) {
+      console.error("Error saving location:", error);
+    }
+  };
+
+  // Send SMS
+  const sendSMS = (recipients: string | string[], message: string) => {
+    const recipientArray = typeof recipients === "string" ? recipients.split(",") : recipients;
+    const smsUrl = `sms:${recipientArray.join(",")}?body=${encodeURIComponent(message)}`;
+    window.location.href = smsUrl;
   };
 
   return (
@@ -118,13 +150,12 @@ const LocationForm: React.FC = () => {
         <TextField label="Address" value={location.address} variant="outlined" fullWidth disabled margin="normal" />
         <TextField label="Radius (meters)" type="number" variant="outlined" fullWidth margin="normal"
           value={location.radius} onChange={(e) => setLocation((prev) => ({ ...prev, radius: parseInt(e.target.value, 10) }))} />
+        <TextField label="Recipients (comma-separated numbers)" value={location.recipients}
+          onChange={(e) => setLocation((prev) => ({ ...prev, recipients: e.target.value }))} variant="outlined" fullWidth margin="normal" />
         <TextField label="Custom Message" value={location.message} onChange={(e) => setLocation((prev) => ({ ...prev, message: e.target.value }))} variant="outlined" fullWidth margin="normal" />
-        <FormControlLabel
-          control={<Checkbox checked={location.sendMsg} onChange={(e) => setLocation((prev) => ({ ...prev, sendMsg: e.target.checked }))} />}
-          label="Send Message"
-        />
-        <Button type="button" variant="contained" color="secondary" onClick={sendMessage} disabled={!location.sendMsg}>
-          Send Message
+        <FormControlLabel control={<Checkbox checked={location.sendMsg} onChange={(e) => setLocation((prev) => ({ ...prev, sendMsg: e.target.checked }))} />} label="Send Message" />
+        <Button type="button" variant="contained" color="secondary" onClick={saveLocation}>
+          Save Location & Send SMS
         </Button>
       </form>
     </div>
