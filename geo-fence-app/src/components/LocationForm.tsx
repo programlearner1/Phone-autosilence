@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { Button, TextField, Checkbox, FormControlLabel, CircularProgress } from "@mui/material";
 import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "./LocationForm.css";
 
-// Define a custom Leaflet icon to use for the marker
+// Define a custom Leaflet icon
 const defaultIcon = new L.Icon({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -22,16 +22,17 @@ const LocationForm: React.FC = () => {
     latitude: 0,
     longitude: 0,
     address: "",
-    radius: 100, // Default radius in meters
+    radius: 100,
     silence: false,
     sendMsg: false,
+    message: "",
     recipients: [],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<any>(null);
 
-  // Function to fetch address from latitude and longitude using OpenCage API
+  // Function to fetch address
   const fetchAddress = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
@@ -48,7 +49,7 @@ const LocationForm: React.FC = () => {
     }
   };
 
-  // Function to get the user's current location
+  // Function to get user's current location
   const getCurrentLocation = () => {
     setLoading(true);
     setError(null);
@@ -59,7 +60,7 @@ const LocationForm: React.FC = () => {
           setLocation((prev) => ({ ...prev, latitude, longitude }));
           fetchAddress(latitude, longitude);
           if (mapRef.current) {
-            mapRef.current.setView([latitude, longitude], 16); // Move map to new location and zoom in
+            mapRef.current.setView([latitude, longitude], 16);
           }
         } else {
           setError("Location accuracy is too low. Please try again.");
@@ -74,11 +75,20 @@ const LocationForm: React.FC = () => {
     );
   };
 
-  // Function to handle marker drag event and update the location state
+  // Handle marker drag event
   const handleMarkerDragEnd = (e: any) => {
     const { lat, lng } = e.target.getLatLng();
     setLocation((prev) => ({ ...prev, latitude: lat, longitude: lng }));
     fetchAddress(lat, lng);
+  };
+
+  // Function to send custom message to selected contacts
+  const sendMessage = () => {
+    if (location.sendMsg && location.recipients.length > 0) {
+      location.recipients.forEach((contact) => {
+        console.log(`Sending message to ${contact}: ${location.message}`);
+      });
+    }
   };
 
   return (
@@ -97,7 +107,6 @@ const LocationForm: React.FC = () => {
           <Marker position={[location.latitude, location.longitude]} draggable eventHandlers={{ dragend: handleMarkerDragEnd }}>
             <Popup>Latitude: {location.latitude} <br /> Longitude: {location.longitude}</Popup>
           </Marker>
-          {/* Visual representation of the location radius */}
           <Circle center={[location.latitude, location.longitude]} radius={location.radius} color="blue" />
         </MapContainer>
       </div>
@@ -109,9 +118,14 @@ const LocationForm: React.FC = () => {
         <TextField label="Address" value={location.address} variant="outlined" fullWidth disabled margin="normal" />
         <TextField label="Radius (meters)" type="number" variant="outlined" fullWidth margin="normal"
           value={location.radius} onChange={(e) => setLocation((prev) => ({ ...prev, radius: parseInt(e.target.value, 10) }))} />
-        <FormControlLabel control={<Checkbox checked={location.silence} onChange={(e) => setLocation((prev) => ({ ...prev, silence: e.target.checked }))} />} label="Silence Notifications" />
-        <FormControlLabel control={<Checkbox checked={location.sendMsg} onChange={(e) => setLocation((prev) => ({ ...prev, sendMsg: e.target.checked }))} />} label="Send Message" />
-        <Button type="submit" variant="contained" color="secondary">Save Location</Button>
+        <TextField label="Custom Message" value={location.message} onChange={(e) => setLocation((prev) => ({ ...prev, message: e.target.value }))} variant="outlined" fullWidth margin="normal" />
+        <FormControlLabel
+          control={<Checkbox checked={location.sendMsg} onChange={(e) => setLocation((prev) => ({ ...prev, sendMsg: e.target.checked }))} />}
+          label="Send Message"
+        />
+        <Button type="button" variant="contained" color="secondary" onClick={sendMessage} disabled={!location.sendMsg}>
+          Send Message
+        </Button>
       </form>
     </div>
   );
