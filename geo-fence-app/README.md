@@ -152,12 +152,6 @@ For feature requests or bug reports, open an issue or reach out to me. Stay tune
 
 ---
 
-## 📜 License
-
-**All rights reserved** © [Your Name] 2025. This project is not open-source and cannot be copied or redistributed without permission.
-
----
-
 ### 🎯 Contribute & Support
 
 For feature requests or bug reports, open an issue or reach out to me. Stay tuned for updates! 🌍
