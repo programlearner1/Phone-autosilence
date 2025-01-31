@@ -35,9 +35,22 @@ const LocationForm: React.FC = () => {
   const mapRef = useRef<any>(null);
 
   useEffect(() => {
-    loadLocations();
-  }, []);
-
+    const locationWatcher = setInterval(() => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          checkUserLocation(latitude, longitude);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    },  600000); // Check every 10 mins
+  
+    return () => clearInterval(locationWatcher); // Cleanup on unmount
+  }, [locations]); // Run when locations change
+  
   // Load saved locations from localStorage
   const loadLocations = () => {
     const storedLocations = localStorage.getItem("locations");
@@ -88,6 +101,36 @@ const LocationForm: React.FC = () => {
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
+  // to calculate the distance in  meters
+  const getDistanceFromLatLonInMeters = (lat1, lon1, lat2, lon2) => {
+    const R = 6371000; // Radius of the Earth in meters
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+  
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in meters
+  };
+
+  // comparing the eariler location with the current location in the saved locations
+  const checkUserLocation = (currentLat, currentLng) => {
+    locations.forEach((loc) => {
+      const distance = getDistanceFromLatLonInMeters(
+        currentLat,
+        currentLng,
+        loc.latitude,
+        loc.longitude
+      );
+      if (distance <= loc.radius && loc.sendMsg) {
+        sendSMS(loc.recipients, loc.message);
+      }
+    });
+  };
+  
 
   // Handle marker drag event
   const handleMarkerDragEnd = (e: any) => {
@@ -96,7 +139,6 @@ const LocationForm: React.FC = () => {
     fetchAddress(lat, lng);
   };
 
-  // Save location and send SMS
  // Save location and send SMS
 const saveLocation = () => {
   if (!location.latitude || !location.longitude || !location.recipients) {
@@ -124,11 +166,21 @@ const saveLocation = () => {
 };
 
   // Send SMS
-  const sendSMS = (recipients: string | string[], message: string) => {
+  const sendSMS = (recipients, message) => {
     const recipientArray = typeof recipients === "string" ? recipients.split(",") : recipients;
-    const smsUrl = `sms:${recipientArray.join(",")}?body=${encodeURIComponent(message)}`;
-    window.location.href = smsUrl;
+  
+    recipientArray.forEach((number) => {
+      fetch(`https://your-sms-api.com/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: number, message }),
+      })
+      .then((response) => response.json())
+      .then((data) => console.log("SMS sent:", data))
+      .catch((error) => console.error("Error sending SMS:", error));
+    });
   };
+  
 
   return (
     <div className="form-container">
