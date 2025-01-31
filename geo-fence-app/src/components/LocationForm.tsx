@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "./LocationForm.css";
+import axios from "axios";
 
 // Define a custom Leaflet icon
 const defaultIcon = new L.Icon({
@@ -165,22 +166,28 @@ const saveLocation = () => {
   }
 };
 
-  // Send SMS
-  const sendSMS = (recipients, message) => {
+const sendSMS = async (recipients, message) => {
+  try {
     const recipientArray = typeof recipients === "string" ? recipients.split(",") : recipients;
-  
-    recipientArray.forEach((number) => {
-      fetch(`https://your-sms-api.com/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: number, message }),
-      })
-      .then((response) => response.json())
-      .then((data) => console.log("SMS sent:", data))
-      .catch((error) => console.error("Error sending SMS:", error));
-    });
-  };
-  
+    
+    for (let number of recipientArray) {
+      const response = await axios.post("http://localhost:5000/send-sms", {
+        recipients: number,
+        message,
+      });
+
+      if (response.data.success) {
+        console.log("SMS sent successfully to:", number);
+      } else {
+        console.error("Failed to send SMS to:", number);
+      }
+    }
+  } catch (error) {
+    console.error("Error sending SMS:", error);
+    alert("Error sending SMS. Check console for details.");
+  }
+};
+
 
   return (
     <div className="form-container">
