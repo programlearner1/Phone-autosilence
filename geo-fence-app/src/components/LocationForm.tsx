@@ -6,6 +6,7 @@ import L from "leaflet";
 import "./LocationForm.css";
 import axios from "axios";
 
+
 // Define a custom Leaflet icon
 const defaultIcon = new L.Icon({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
