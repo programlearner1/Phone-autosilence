@@ -170,24 +170,27 @@ const saveLocation = () => {
 const sendSMS = async (recipients, message) => {
   try {
     const recipientArray = typeof recipients === "string" ? recipients.split(",") : recipients;
-    
+
     for (let number of recipientArray) {
+      console.log(`📩 Sending SMS to: ${number} | Message: ${message}`); // Debug log
+
       const response = await axios.post("http://localhost:5000/send-sms", {
-        recipients: number,
+        to: number,  // ✅ Correct key name
         message,
       });
 
       if (response.data.success) {
-        console.log("SMS sent successfully to:", number);
+        console.log("✅ SMS sent successfully to:", number);
       } else {
-        console.error("Failed to send SMS to:", number);
+        console.error("❌ Failed to send SMS to:", number);
       }
     }
   } catch (error) {
-    console.error("Error sending SMS:", error);
+    console.error("❌ Error sending SMS:", error.response?.data || error.message);
     alert("Error sending SMS. Check console for details.");
   }
 };
+
 
 
   return (
