@@ -172,10 +172,8 @@ const sendSMS = async (recipients, message) => {
     const recipientArray = typeof recipients === "string" ? recipients.split(",") : recipients;
 
     for (let number of recipientArray) {
-      console.log(`📩 Sending SMS to: ${number} | Message: ${message}`); // Debug log
-
       const response = await axios.post("http://localhost:5000/send-sms", {
-        to: number,  // ✅ Correct key name
+        to: number, // Fix key from `recipients` to `to`
         message,
       });
 
@@ -186,8 +184,8 @@ const sendSMS = async (recipients, message) => {
       }
     }
   } catch (error) {
-    console.error("❌ Error sending SMS:", error.response?.data || error.message);
-    alert("Error sending SMS. Check console for details.");
+    console.error("❌ Error sending SMS:", error.response ? error.response.data : error.message);
+    alert(`Error sending SMS: ${error.response ? error.response.data.error : error.message}`);
   }
 };
 
