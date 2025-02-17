@@ -11,7 +11,19 @@ const firebaseConfig = {
     measurementId: "G-9NGTZ446ES"
   };
 
-const app = initializeApp(firebaseConfig);
+  const app = initializeApp(firebaseConfig);
+
+// Request permission for notifications
+export const requestNotificationPermission = async () => {
+  try {
+    const token = await getToken(messaging, { vapidKey: "BGHoeP63LEzhx1a66xfD2b2q2PtcjZDV8xVO1ZU2D-P2dvQK2MkBYSqbH2lyU8QSKgfB7o7ktnBCh2iP66UHPdU" });
+    console.log("FCM Token:", token);
+  } catch (error) {
+    console.error("Error getting FCM token", error);
+  }
+};
+
 const messaging = getMessaging(app);
 
+// Export the required Firebase functions
 export { messaging, getToken, onMessage };
