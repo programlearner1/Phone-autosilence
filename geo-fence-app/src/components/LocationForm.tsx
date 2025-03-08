@@ -5,6 +5,9 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "./LocationForm.css";
 import axios from "axios";
+import { sendSMS } from "../utils/sendSMS";
+
+
 
 
 // Define a custom Leaflet icon
@@ -127,11 +130,13 @@ const LocationForm: React.FC = () => {
         loc.latitude,
         loc.longitude
       );
+  
       if (distance <= loc.radius && loc.sendMsg) {
-        sendSMS(loc.recipients, loc.message);
+        sendTelegramMessage(loc.message);
       }
     });
   };
+  
   
 
   // Handle marker drag event
@@ -157,7 +162,7 @@ const saveLocation = () => {
 
     // Send SMS only if "Send Message" checkbox is checked
     if (location.sendMsg && location.message.trim() !== "") {
-      sendSMS(location.recipients, location.message);
+      sendSMS([location.recipients], location.message);
       alert("Location saved and SMS sent!");
     } else {
       alert("Location saved successfully!");
@@ -167,29 +172,22 @@ const saveLocation = () => {
   }
 };
 
-const sendSMS = async (recipients, message) => {
+const sendTelegramMessage = async (message) => {
   try {
-    const recipientArray = typeof recipients === "string" ? recipients.split(",") : recipients;
+    const response = await axios.post("http://localhost:5000/send-telegram", {
+      message,
+    });
 
-    for (let number of recipientArray) {
-      const response = await axios.post("http://localhost:5000/send-sms", {
-        to: number, // Fix key from `recipients` to `to`
-        message,
-      });
-
-      if (response.data.success) {
-        console.log("✅ SMS sent successfully to:", number);
-      } else {
-        console.error("❌ Failed to send SMS to:", number);
-      }
+    if (response.data.success) {
+      console.log("✅ Telegram message sent successfully!");
+    } else {
+      console.error("❌ Failed to send Telegram message.");
     }
   } catch (error) {
-    console.error("❌ Error sending SMS:", error.response ? error.response.data : error.message);
-    alert(`Error sending SMS: ${error.response ? error.response.data.error : error.message}`);
+    console.error("❌ Error sending Telegram message:", error.response ? error.response.data : error.message);
+    alert(`Error sending message: ${error.response ? error.response.data.error : error.message}`);
   }
 };
-
-
 
   return (
     <div className="form-container">
