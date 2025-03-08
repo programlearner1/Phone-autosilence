@@ -1,5 +1,5 @@
 const express = require("express");
-const twilio = require("twilio");
+const axios = require("axios");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -7,28 +7,32 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: "http://localhost:3000" })); // Allow frontend requests
 
-const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-app.post("/send-sms", async (req, res) => {
-  const { to, message } = req.body;
-  console.log("📩 Received SMS Request:", req.body); // ✅ Log incoming data
+// ✅ Route to send Telegram message
+app.post("/send-telegram", async (req, res) => {
+  const { message } = req.body;
+  console.log("📩 Incoming Telegram Request:", req.body);
 
-  if (!to || !message) {
-    console.error("❌ Missing 'to' or 'message'", req.body);
-    return res.status(400).json({ success: false, error: "Missing 'to' or 'message' field" });
+  if (!message) {
+    console.error("❌ Missing 'message' field");
+    return res.status(400).json({ success: false, error: "Missing 'message'" });
   }
 
   try {
-    const sms = await client.messages.create({
-      body: message,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: to,
-    });
+    const response = await axios.post(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+      }
+    );
 
-    console.log("✅ SMS sent:", sms.sid);
-    res.json({ success: true, message: "SMS sent successfully!", sid: sms.sid });
+    console.log("✅ Telegram Message Sent:", response.data);
+    res.json({ success: true, message: "Message sent to Telegram!" });
   } catch (error) {
-    console.error("❌ Twilio Error:", error.message);
+    console.error("❌ Telegram API Error:", error.response?.data || error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 });
