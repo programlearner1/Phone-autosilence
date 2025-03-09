@@ -32,12 +32,18 @@ const LocationForm: React.FC = () => {
     sendMsg: false,
     message: "",
     recipients: "",
+    messageSent: false,
   });
 
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<any>(null);
+
+  // Load saved locations on component mount
+  useEffect(() => {
+    loadLocations();
+  }, []);
 
   useEffect(() => {
     const locationWatcher = setInterval(() => {
@@ -67,9 +73,20 @@ const LocationForm: React.FC = () => {
   // Fetch address from coordinates
   const fetchAddress = async (lat: number, lng: number) => {
     try {
+      const OPENCAGE_API_KEY = process.env.REACT_APP_OPENCAGE_API_KEY;
+      
+      if (!OPENCAGE_API_KEY) {
+        throw new Error('OpenCage API key is not configured');
+      }
+
       const response = await fetch(
-        `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=YOUR_API_KEY`
+        `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=${OPENCAGE_API_KEY}`
       );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
       if (data.results.length > 0) {
         setLocation((prev) => ({ ...prev, address: data.results[0].formatted }));
@@ -77,7 +94,8 @@ const LocationForm: React.FC = () => {
         setError("Unable to fetch address. Please try again.");
       }
     } catch (err) {
-      setError("Error fetching address. Check internet connection.");
+      console.error("Geocoding error:", err);
+      setError("Error fetching address. Check API key or internet connection.");
     }
   };
 
@@ -121,8 +139,10 @@ const LocationForm: React.FC = () => {
     return R * c; // Distance in meters
   };
 
-  // comparing the eariler location with the current location in the saved locations
+  // comparing the earlier location with the current location in the saved locations
   const checkUserLocation = (currentLat, currentLng) => {
+    let shouldBeSilent = false;
+    
     locations.forEach((loc) => {
       const distance = getDistanceFromLatLonInMeters(
         currentLat,
@@ -130,14 +150,54 @@ const LocationForm: React.FC = () => {
         loc.latitude,
         loc.longitude
       );
-  
-      if (distance <= loc.radius && loc.sendMsg) {
-        sendTelegramMessage(loc.message);
+      
+      // Check if user is within any silent zone and handle message sending
+      if (distance <= loc.radius) {
+        // Enable silent mode if configured
+        if (loc.silence) {
+          shouldBeSilent = true;
+        }
+        
+        // Send message if configured and not already sent
+        if (loc.sendMsg && loc.message && !loc.messageSent) {
+          sendSMS([loc.recipients], loc.message);
+          // Mark message as sent to prevent repeated sending
+          loc.messageSent = true;
+          // Update localStorage with the new state
+          localStorage.setItem("locations", JSON.stringify(locations));
+        }
+      } else {
+        // Reset messageSent flag when user exits the zone
+        if (loc.messageSent) {
+          loc.messageSent = false;
+          localStorage.setItem("locations", JSON.stringify(locations));
+        }
       }
     });
+
+    // Update device silent mode based on location
+    updateDeviceSilentMode(shouldBeSilent);
   };
-  
-  
+
+  // Function to update device silent mode
+  const updateDeviceSilentMode = async (shouldBeSilent: boolean) => {
+    try {
+      const response = await fetch('http://localhost:5000/update-silent-mode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ silent: shouldBeSilent }),
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        console.error('Failed to update silent mode');
+      }
+    } catch (error) {
+      console.error('Error updating silent mode:', error);
+    }
+  };
 
   // Handle marker drag event
   const handleMarkerDragEnd = (e: any) => {
@@ -146,48 +206,33 @@ const LocationForm: React.FC = () => {
     fetchAddress(lat, lng);
   };
 
- // Save location and send SMS
-const saveLocation = () => {
-  if (!location.latitude || !location.longitude || !location.recipients) {
-    alert("Fill all required fields.");
-    return;
-  }
+  // Save location
+  const saveLocation = () => {
+    if (!location.latitude || !location.longitude) {
+      alert("Location coordinates are required.");
+      return;
+    }
 
-  const newLocation = { ...location };
-  const updatedLocations = [...locations, newLocation];
+    if (location.sendMsg && (!location.recipients || !location.message.trim())) {
+      alert("Recipients and message are required when message sending is enabled.");
+      return;
+    }
 
-  try {
-    localStorage.setItem("locations", JSON.stringify(updatedLocations));
-    setLocations(updatedLocations);
+    const newLocation = { 
+      ...location,
+      messageSent: false // Add flag to track if message has been sent
+    };
+    const updatedLocations = [...locations, newLocation];
 
-    // Send SMS only if "Send Message" checkbox is checked
-    if (location.sendMsg && location.message.trim() !== "") {
-      sendSMS([location.recipients], location.message);
-      alert("Location saved and SMS sent!");
-    } else {
+    try {
+      localStorage.setItem("locations", JSON.stringify(updatedLocations));
+      setLocations(updatedLocations);
       alert("Location saved successfully!");
+    } catch (error) {
+      console.error("Error saving location:", error);
+      alert("Error saving location. Please try again.");
     }
-  } catch (error) {
-    console.error("Error saving location:", error);
-  }
-};
-
-const sendTelegramMessage = async (message) => {
-  try {
-    const response = await axios.post("http://localhost:5000/send-telegram", {
-      message,
-    });
-
-    if (response.data.success) {
-      console.log("✅ Telegram message sent successfully!");
-    } else {
-      console.error("❌ Failed to send Telegram message.");
-    }
-  } catch (error) {
-    console.error("❌ Error sending Telegram message:", error.response ? error.response.data : error.message);
-    alert(`Error sending message: ${error.response ? error.response.data.error : error.message}`);
-  }
-};
+  };
 
   return (
     <div className="form-container">
@@ -219,9 +264,24 @@ const sendTelegramMessage = async (message) => {
         <TextField label="Recipients (comma-separated numbers)" value={location.recipients}
           onChange={(e) => setLocation((prev) => ({ ...prev, recipients: e.target.value }))} variant="outlined" fullWidth margin="normal" />
         <TextField label="Custom Message" value={location.message} onChange={(e) => setLocation((prev) => ({ ...prev, message: e.target.value }))} variant="outlined" fullWidth margin="normal" />
-        <FormControlLabel control={<Checkbox checked={location.sendMsg} onChange={(e) => setLocation((prev) => ({ ...prev, sendMsg: e.target.checked }))} />} label="Send Message" />
+        <div className="checkbox-group">
+          <FormControlLabel 
+            control={<Checkbox 
+              checked={location.sendMsg} 
+              onChange={(e) => setLocation((prev) => ({ ...prev, sendMsg: e.target.checked }))} 
+            />} 
+            label="Send Message on Entry" 
+          />
+          <FormControlLabel 
+            control={<Checkbox 
+              checked={location.silence} 
+              onChange={(e) => setLocation((prev) => ({ ...prev, silence: e.target.checked }))} 
+            />} 
+            label="Enable Silent Mode in this zone" 
+          />
+        </div>
         <Button type="button" variant="contained" color="secondary" onClick={saveLocation}>
-          Save Location & Send SMS
+          Save Location
         </Button>
       </form>
     </div>
