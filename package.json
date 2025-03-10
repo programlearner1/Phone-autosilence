@@ -3,6 +3,7 @@
     "@types/cors": "^2.8.17"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "firebase-admin": "^13.2.0"
   }
 }
