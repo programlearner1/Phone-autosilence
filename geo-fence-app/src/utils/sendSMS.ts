@@ -3,13 +3,13 @@ import { getMessaging, getToken } from 'firebase/messaging';
 import { initializeApp } from 'firebase/app';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCRhcD6DjPKUwmgEM42YTwQj-dJusatXlQ",
-  authDomain: "phone-silencer-33c2f.firebaseapp.com",
-  projectId: "phone-silencer-33c2f",
-  storageBucket: "phone-silencer-33c2f.firebasestorage.app",
-  messagingSenderId: "238705445203",
-  appId: "1:238705445203:web:d91bda613a6fa1ccc979a6",
-  measurementId: "G-9NGTZ446ES"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
