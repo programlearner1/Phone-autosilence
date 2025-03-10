@@ -23,20 +23,33 @@ export const requestNotificationPermission = async () => {
       throw new Error('VAPID key is not configured');
     }
 
-    const currentToken = await getToken(messaging, { 
-      vapidKey: vapidKey,
-      serviceWorkerRegistration: await navigator.serviceWorker.getRegistration()
-    });
+    // Ensure service worker is registered before getting token
+    const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     
-    if (currentToken) {
-      console.log("FCM Token:", currentToken);
-      return currentToken;
-    } else {
-      console.log('No registration token available.');
+    // Get the token with proper error handling
+    try {
+      const currentToken = await getToken(messaging, { 
+        vapidKey,
+        serviceWorkerRegistration
+      });
+      
+      if (currentToken) {
+        console.log("✅ FCM Token obtained:", currentToken);
+        return currentToken;
+      } else {
+        console.warn("⚠️ No registration token available");
+        return null;
+      }
+    } catch (tokenError) {
+      console.error("❌ Error getting token:", tokenError);
+      // Check if the error is related to the VAPID key
+      if (tokenError.message?.includes('atob')) {
+        console.error("❌ Invalid VAPID key format. Please check your VAPID key in environment variables.");
+      }
       return null;
     }
   } catch (error) {
-    console.error("Error getting FCM token", error);
+    console.error("❌ Error in notification setup:", error);
     return null;
   }
 };

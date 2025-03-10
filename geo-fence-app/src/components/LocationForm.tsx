@@ -85,7 +85,13 @@ const LocationForm: React.FC = () => {
       );
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 401) {
+          console.error("❌ Invalid OpenCage API key. Please check your environment variables.");
+          setError("Invalid API key. Please check configuration.");
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return;
       }
 
       const data = await response.json();
@@ -95,7 +101,7 @@ const LocationForm: React.FC = () => {
         setError("Unable to fetch address. Please try again.");
       }
     } catch (err) {
-      console.error("Geocoding error:", err);
+      console.error("❌ Geocoding error:", err);
       setError("Error fetching address. Check API key or internet connection.");
     }
   };
