@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import { LocationProvider } from "./contexts/LocationContext";
 import LocationForm from "./components/LocationForm";
 import LocationList from "./components/LocationList";
-import Map from "./components/Map";
 import { messaging, getToken, onMessage } from "./firebase";
 
 const App: React.FC = () => {

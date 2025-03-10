@@ -4,7 +4,6 @@ import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "./LocationForm.css";
-import axios from "axios";
 import { sendNotification } from "../utils/sendSMS";
 import config from "../config";
 
