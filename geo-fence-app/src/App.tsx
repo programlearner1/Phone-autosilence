@@ -1,42 +1,68 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { LocationProvider } from "./contexts/LocationContext";
 import LocationForm from "./components/LocationForm";
 import LocationList from "./components/LocationList";
-import { messaging, getToken, onMessage } from "./firebase";
+import { messaging, onMessage, requestNotificationPermission } from "./firebase";
+import { testFirebaseSetup } from "./utils/firebaseTest";
+import { Alert, Snackbar } from "@mui/material";
 
 const App: React.FC = () => {
+  const [notificationStatus, setNotificationStatus] = useState<{
+    show: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({ show: false, message: '', severity: 'success' });
+
   useEffect(() => {
-    navigator.serviceWorker
-      .register("/firebase-messaging-sw.js")
-      .then((registration) => {
+    const initializeApp = async () => {
+      try {
+        // Test Firebase setup
+        const testResult = await testFirebaseSetup();
+        if (!testResult) {
+          setNotificationStatus({
+            show: true,
+            message: 'Firebase initialization failed. Check console for details.',
+            severity: 'error'
+          });
+          return;
+        }
+
+        // Register service worker and request notification permission
+        const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
         console.log("Service Worker registered with scope:", registration.scope);
-        return Notification.requestPermission();
-      })
-      .then((permission) => {
+        
+        const permission = await Notification.requestPermission();
         if (permission !== "granted") {
           throw new Error("Notification permission denied.");
         }
-        return navigator.serviceWorker.ready;
-      })
-      .then((registration) => {
-        return getToken(messaging, {
-          vapidKey: "BGHoeP63LEzhx1a66xfD2b2q2PtcjZDV8xVO1ZU2D-P2dvQK2MkBYSqbH2lyU8QSKgfB7o7ktnBCh2iP66UHPdU", // 🔴 REPLACE THIS
-          serviceWorkerRegistration: registration,
-        });
-      })
-      .then((token) => {
-        if (token) {
-          console.log("FCM Token:", token);
-        } else {
-          console.warn("No FCM token available.");
-        }
-      })
-      .catch((err) => console.error("Error in Firebase setup:", err));
 
-    onMessage(messaging, (payload) => {
-      console.log("New notification:", payload);
-      alert(payload.notification?.title || "New Notification");
-    });
+        await requestNotificationPermission();
+        
+        setNotificationStatus({
+          show: true,
+          message: 'Notifications enabled successfully!',
+          severity: 'success'
+        });
+
+        // Set up message listener
+        onMessage(messaging, (payload) => {
+          console.log("New notification:", payload);
+          const title = payload.notification?.title || "New Notification";
+          const body = payload.notification?.body || "";
+          
+          new Notification(title, { body });
+        });
+      } catch (err) {
+        console.error("Error in Firebase setup:", err);
+        setNotificationStatus({
+          show: true,
+          message: 'Error setting up notifications. Check console for details.',
+          severity: 'error'
+        });
+      }
+    };
+
+    initializeApp();
   }, []);
 
   return (
@@ -47,9 +73,20 @@ const App: React.FC = () => {
           <div>
             <LocationForm />
             <LocationList />
-         
           </div>
         </div>
+        <Snackbar 
+          open={notificationStatus.show} 
+          autoHideDuration={6000} 
+          onClose={() => setNotificationStatus(prev => ({ ...prev, show: false }))}
+        >
+          <Alert 
+            severity={notificationStatus.severity} 
+            onClose={() => setNotificationStatus(prev => ({ ...prev, show: false }))}
+          >
+            {notificationStatus.message}
+          </Alert>
+        </Snackbar>
       </div>
     </LocationProvider>
   );

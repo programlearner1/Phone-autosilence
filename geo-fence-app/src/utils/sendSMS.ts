@@ -1,19 +1,6 @@
 import config from '../config';
-import { getMessaging, getToken } from 'firebase/messaging';
-import { initializeApp } from 'firebase/app';
-
-const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
-};
-
-const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+import { getToken } from 'firebase/messaging';
+import { messaging } from '../firebase';
 
 // Get FCM token
 export const getFCMToken = async () => {
@@ -58,10 +45,21 @@ export const sendNotification = async (message: string, title?: string) => {
     const data = await response.json();
     if (data.success) {
       console.log("📩 Notification sent successfully!");
+      return true;
     } else {
       console.error("❌ Notification sending failed:", data.error);
+      return false;
     }
   } catch (error) {
     console.error("❌ Error sending notification:", error);
+    return false;
   }
+};
+
+// Test notification function
+export const sendTestNotification = async () => {
+  return sendNotification(
+    "This is a test notification to verify Firebase Cloud Messaging setup.",
+    "Test Notification"
+  );
 };
