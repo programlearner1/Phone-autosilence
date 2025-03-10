@@ -25,13 +25,22 @@ if (missingVars.length > 0) {
 // Validate VAPID key format
 const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
 if (vapidKey) {
-  // VAPID key should be a URL-safe base64 string
-  const isValidVapidKey = /^[A-Za-z0-9_-]+$/.test(vapidKey);
+  // VAPID key should be a URL-safe base64 string and typically starts with 'B'
+  const isValidVapidKey = /^B[A-Za-z0-9_-]+$/.test(vapidKey);
   if (!isValidVapidKey) {
     console.error('\n❌ Invalid VAPID key format. The key should be the public key from Firebase Cloud Messaging.');
-    console.error('Please make sure you are using the public key from Firebase Console > Project Settings > Cloud Messaging > Web Push certificates.\n');
+    console.error('The VAPID key should:');
+    console.error('1. Start with the letter "B"');
+    console.error('2. Contain only letters, numbers, underscores, and hyphens');
+    console.error('3. Be copied exactly as shown in Firebase Console > Project Settings > Cloud Messaging > Web Push certificates\n');
     process.exit(1);
   }
 }
 
-console.log('✅ All environment variables are properly configured!\n'); 
+// Log all environment variables (without their values) for debugging
+console.log('\n📋 Configured environment variables:');
+requiredEnvVars.forEach(varName => {
+  console.log(`   - ${varName}: ${process.env[varName] ? '✓' : '✗'}`);
+});
+
+console.log('\n✅ All environment variables are properly configured!\n'); 
