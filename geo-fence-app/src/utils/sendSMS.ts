@@ -25,33 +25,37 @@ export const getFCMToken = async () => {
   }
 };
 
-export const sendNotification = async (message: string, title?: string) => {
+export const sendNotification = async (message: string, title: string) => {
   try {
-    const token = await getFCMToken();
+    // Get the FCM token
+    const token = await messaging.getToken();
     if (!token) {
-      throw new Error('No FCM token available');
+      console.error('No FCM token available');
+      return false;
     }
 
-    const response = await fetch(`${config.apiUrl}/send-notification`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
+    // Send notification using Netlify function
+    const response = await fetch('/.netlify/functions/send-notification', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         token,
         message,
-        title
+        title,
       }),
     });
 
     const data = await response.json();
-    if (data.success) {
-      console.log("📩 Notification sent successfully!");
-      return true;
-    } else {
-      console.error("❌ Notification sending failed:", data.error);
+    if (!data.success) {
+      console.error('Failed to send notification:', data.error);
       return false;
     }
+
+    return true;
   } catch (error) {
-    console.error("❌ Error sending notification:", error);
+    console.error('Error sending notification:', error);
     return false;
   }
 };

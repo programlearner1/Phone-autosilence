@@ -22,6 +22,30 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
+// Validate Firebase API Key
+const firebaseApiKey = process.env.REACT_APP_FIREBASE_API_KEY;
+if (firebaseApiKey) {
+  // Firebase API keys typically start with 'AIza'
+  if (!firebaseApiKey.startsWith('AIza')) {
+    console.error('\n❌ Invalid Firebase API key format.');
+    console.error('Firebase API key should:');
+    console.error('1. Start with "AIza"');
+    console.error('2. Be copied exactly as shown in Firebase Console > Project Settings > Web API Key\n');
+    process.exit(1);
+  }
+}
+
+// Validate Project ID
+const projectId = process.env.REACT_APP_FIREBASE_PROJECT_ID;
+if (projectId) {
+  // Project ID should only contain lowercase letters, numbers, and hyphens
+  if (!/^[a-z0-9-]+$/.test(projectId)) {
+    console.error('\n❌ Invalid Firebase Project ID format.');
+    console.error('Project ID should only contain lowercase letters, numbers, and hyphens.\n');
+    process.exit(1);
+  }
+}
+
 // Validate VAPID key format
 const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
 if (vapidKey) {
@@ -40,7 +64,16 @@ if (vapidKey) {
 // Log all environment variables (without their values) for debugging
 console.log('\n📋 Configured environment variables:');
 requiredEnvVars.forEach(varName => {
-  console.log(`   - ${varName}: ${process.env[varName] ? '✓' : '✗'}`);
+  const value = process.env[varName];
+  if (value) {
+    // Show first 6 and last 4 characters of the value, rest as ...
+    const truncatedValue = value.length > 10 
+      ? `${value.substring(0, 6)}...${value.substring(value.length - 4)}`
+      : value;
+    console.log(`   - ${varName}: ✓ (${truncatedValue})`);
+  } else {
+    console.log(`   - ${varName}: ✗`);
+  }
 });
 
 console.log('\n✅ All environment variables are properly configured!\n'); 

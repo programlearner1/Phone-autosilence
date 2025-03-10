@@ -241,6 +241,24 @@ const LocationForm: React.FC = () => {
     }
   };
 
+  // Test notification function
+  const testNotification = async () => {
+    try {
+      const result = await sendNotification(
+        "This is a test notification from the geofence app!",
+        "Test Notification"
+      );
+      if (result) {
+        alert("Test notification sent successfully!");
+      } else {
+        alert("Failed to send test notification. Check console for details.");
+      }
+    } catch (error) {
+      console.error("Error sending test notification:", error);
+      alert("Error sending test notification. Check console for details.");
+    }
+  };
+
   return (
     <div className="form-container">
       <div className="map-container">
@@ -264,6 +282,17 @@ const LocationForm: React.FC = () => {
         <Button variant="contained" color="primary" onClick={getCurrentLocation} disabled={loading}>
           {loading ? <CircularProgress size={24} /> : "Get Current Location"}
         </Button>
+        
+        {/* Add test notification button */}
+        <Button 
+          variant="outlined" 
+          color="secondary" 
+          onClick={testNotification}
+          style={{ marginLeft: '8px' }}
+        >
+          Test Notification
+        </Button>
+
         {error && <p className="error-message">{error}</p>}
         <TextField label="Address" value={location.address} variant="outlined" fullWidth disabled margin="normal" />
         <TextField label="Radius (meters)" type="number" variant="outlined" fullWidth margin="normal"

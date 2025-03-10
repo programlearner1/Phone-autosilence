@@ -1,6 +1,31 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
+// Validate Firebase configuration
+const validateFirebaseConfig = (config) => {
+  const requiredFields = [
+    'apiKey',
+    'authDomain',
+    'projectId',
+    'storageBucket',
+    'messagingSenderId',
+    'appId'
+  ];
+
+  const missingFields = requiredFields.filter(field => !config[field]);
+  if (missingFields.length > 0) {
+    throw new Error(`Missing required Firebase configuration fields: ${missingFields.join(', ')}`);
+  }
+
+  if (!config.apiKey.startsWith('AIza')) {
+    throw new Error('Invalid Firebase API key format. API key should start with "AIza"');
+  }
+
+  if (!/^[a-z0-9-]+$/.test(config.projectId)) {
+    throw new Error('Invalid Firebase Project ID format');
+  }
+};
+
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -11,31 +36,39 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase only once
-export const app = initializeApp(firebaseConfig);
-export const messaging = getMessaging(app);
+// Initialize Firebase
+let app;
+let messaging;
 
-// Validate VAPID key format
-const isValidVapidKey = (key) => {
-  if (!key) return false;
-  // VAPID key should start with 'B' and contain only valid base64url characters
-  return /^B[A-Za-z0-9_-]+$/.test(key);
+try {
+  validateFirebaseConfig(firebaseConfig);
+  app = initializeApp(firebaseConfig);
+  messaging = getMessaging(app);
+  console.log('✅ Firebase initialized successfully');
+} catch (error) {
+  console.error('❌ Firebase initialization error:', error);
+  throw error;
+}
+
+// Convert VAPID key to the correct format if needed
+const formatVapidKey = (key) => {
+  if (!key) return null;
+  key = key.trim();
+  return /^B[A-Za-z0-9_-]+$/.test(key) ? key : null;
 };
 
 // Request permission for notifications
 export const requestNotificationPermission = async () => {
   try {
-    const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
+    let vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
     if (!vapidKey) {
       console.error('❌ VAPID key is not configured');
       throw new Error('VAPID key is not configured');
     }
 
-    if (!isValidVapidKey(vapidKey)) {
+    vapidKey = formatVapidKey(vapidKey);
+    if (!vapidKey) {
       console.error('❌ Invalid VAPID key format');
-      console.error('The key should:');
-      console.error('1. Start with the letter "B"');
-      console.error('2. Contain only letters, numbers, underscores, and hyphens');
       throw new Error('Invalid VAPID key format');
     }
 
@@ -51,7 +84,7 @@ export const requestNotificationPermission = async () => {
       });
       
       if (currentToken) {
-        console.log("✅ FCM Token obtained:", currentToken);
+        console.log("✅ FCM Token obtained");
         return currentToken;
       } else {
         console.warn("⚠️ No registration token available");
@@ -61,16 +94,15 @@ export const requestNotificationPermission = async () => {
       console.error("❌ Error getting token:", tokenError);
       if (tokenError.code === 'messaging/failed-service-worker-registration') {
         console.error("❌ Service Worker registration failed");
-      } else if (tokenError.message?.includes('atob')) {
-        console.error("❌ Invalid VAPID key format. Please check your VAPID key in environment variables.");
+      } else if (tokenError.message?.includes('INVALID_ARGUMENT')) {
+        console.error("❌ Invalid Firebase configuration. Please check your API key and project settings.");
       }
-      return null;
+      throw tokenError;
     }
   } catch (error) {
     console.error("❌ Error in notification setup:", error);
-    return null;
+    throw error;
   }
 };
 
-// Export the required Firebase functions
-export { getToken, onMessage };
+export { messaging, getToken, onMessage };
