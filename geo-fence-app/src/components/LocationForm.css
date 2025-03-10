@@ -1,24 +1,16 @@
 /* LocationForm.css */
 .form-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 30px;
+  max-width: 800px;
+  margin: 0 auto;
   padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .map-container {
-  position: relative;
-  width: 100%;
-  height: 400px; /* Adjust height as needed */
-  background-color: #ada7a7;
-  border-radius: 8px;
   margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
 
 .location-pin {
   position: absolute;
@@ -41,14 +33,21 @@
 .location-form {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: 400px;
+  gap: 16px;
+}
+
+.button-group {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .error-message {
-  color: red;
-  text-align: center;
-  margin-bottom: 10px;
+  color: #d32f2f;
+  margin: 8px 0;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #ffebee;
 }
 
 button {

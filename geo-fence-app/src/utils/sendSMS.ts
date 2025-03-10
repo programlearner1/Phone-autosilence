@@ -1,4 +1,3 @@
-import config from '../config';
 import { getToken } from 'firebase/messaging';
 import { messaging } from '../firebase';
 
@@ -13,22 +12,23 @@ export const getFCMToken = async () => {
     const currentToken = await getToken(messaging, {
       vapidKey: vapidKey
     });
+
     if (currentToken) {
+      console.log('FCM Token obtained successfully');
       return currentToken;
     } else {
-      console.log('No registration token available.');
+      console.error('No registration token available');
       return null;
     }
   } catch (err) {
-    console.log('An error occurred while retrieving token:', err);
+    console.error('Error retrieving FCM token:', err);
     return null;
   }
 };
 
 export const sendNotification = async (message: string, title: string) => {
   try {
-    // Get the FCM token
-    const token = await messaging.getToken();
+    const token = await getFCMToken();
     if (!token) {
       console.error('No FCM token available');
       return false;
@@ -53,6 +53,7 @@ export const sendNotification = async (message: string, title: string) => {
       return false;
     }
 
+    console.log('Notification sent successfully!');
     return true;
   } catch (error) {
     console.error('Error sending notification:', error);
@@ -63,7 +64,7 @@ export const sendNotification = async (message: string, title: string) => {
 // Test notification function
 export const sendTestNotification = async () => {
   return sendNotification(
-    "This is a test notification to verify Firebase Cloud Messaging setup.",
+    "This is a test notification from the geofence app!",
     "Test Notification"
   );
 };

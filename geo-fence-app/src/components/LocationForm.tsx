@@ -1,14 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Button, TextField, Checkbox, FormControlLabel, CircularProgress, Select, MenuItem, InputLabel, FormControl } from "@mui/material";
+import { Button, TextField, Checkbox, FormControlLabel, CircularProgress } from "@mui/material";
 import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "./LocationForm.css";
-import { sendNotification } from "../utils/sendSMS";
-import config from "../config";
-
-
-
+import { sendTestNotification } from "../utils/sendSMS";
 
 // Define a custom Leaflet icon
 const defaultIcon = new L.Icon({
@@ -29,11 +25,7 @@ const LocationForm: React.FC = () => {
     address: "",
     radius: 100,
     silence: false,
-    sendMsg: false,
     message: "",
-    recipients: "",
-    messageSent: false,
-    carrier: "tmobile", // Default carrier
   });
 
   const [locations, setLocations] = useState<any[]>([]);
@@ -58,12 +50,11 @@ const LocationForm: React.FC = () => {
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
-    },  600000); // Check every 10 mins
+    }, 600000); // Check every 10 mins
   
-    return () => clearInterval(locationWatcher); // Cleanup on unmount
-  }, [locations]); // Run when locations change
+    return () => clearInterval(locationWatcher);
+  }, [locations]);
   
-  // Load saved locations from localStorage
   const loadLocations = () => {
     const storedLocations = localStorage.getItem("locations");
     if (storedLocations) {
@@ -71,7 +62,6 @@ const LocationForm: React.FC = () => {
     }
   };
 
-  // Fetch address from coordinates
   const fetchAddress = async (lat: number, lng: number) => {
     try {
       const OPENCAGE_API_KEY = process.env.REACT_APP_OPENCAGE_API_KEY;
@@ -85,54 +75,43 @@ const LocationForm: React.FC = () => {
       );
 
       if (!response.ok) {
-        if (response.status === 401) {
-          console.error("❌ Invalid OpenCage API key. Please check your environment variables.");
-          setError("Invalid API key. Please check configuration.");
-        } else {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return;
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
       if (data.results.length > 0) {
         setLocation((prev) => ({ ...prev, address: data.results[0].formatted }));
       } else {
-        setError("Unable to fetch address. Please try again.");
+        setError("Unable to fetch address");
       }
     } catch (err) {
-      console.error("❌ Geocoding error:", err);
-      setError("Error fetching address. Check API key or internet connection.");
+      console.error("Error fetching address:", err);
+      setError("Error fetching address");
     }
   };
 
-  // Get user's current location
   const getCurrentLocation = () => {
     setLoading(true);
     setError(null);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude, accuracy } = position.coords;
-        if (accuracy <= 50) {
-          setLocation((prev) => ({ ...prev, latitude, longitude }));
-          fetchAddress(latitude, longitude);
-          if (mapRef.current) {
-            mapRef.current.setView([latitude, longitude], 16);
-          }
-        } else {
-          setError("Location accuracy is too low. Try again.");
+        const { latitude, longitude } = position.coords;
+        setLocation((prev) => ({ ...prev, latitude, longitude }));
+        fetchAddress(latitude, longitude);
+        if (mapRef.current) {
+          mapRef.current.setView([latitude, longitude], 16);
         }
         setLoading(false);
       },
       (error) => {
-        setError("Unable to retrieve location. Enable location services.");
+        setError("Unable to retrieve location");
         setLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
-  // to calculate the distance in  meters
-  const getDistanceFromLatLonInMeters = (lat1, lon1, lat2, lon2) => {
+
+  const getDistanceFromLatLonInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371000; // Radius of the Earth in meters
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
@@ -143,13 +122,10 @@ const LocationForm: React.FC = () => {
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
   
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in meters
+    return R * c;
   };
 
-  // comparing the earlier location with the current location in the saved locations
-  const checkUserLocation = (currentLat, currentLng) => {
-    let shouldBeSilent = false;
-    
+  const checkUserLocation = (currentLat: number, currentLng: number) => {
     locations.forEach((loc) => {
       const distance = getDistanceFromLatLonInMeters(
         currentLat,
@@ -158,104 +134,57 @@ const LocationForm: React.FC = () => {
         loc.longitude
       );
       
-      // Check if user is within any silent zone and handle message sending
-      if (distance <= loc.radius) {
-        // Enable silent mode if configured
-        if (loc.silence) {
-          shouldBeSilent = true;
-        }
-        
-        // Send notification if configured and not already sent
-        if (loc.sendMsg && loc.message && !loc.messageSent) {
-          sendNotification(loc.message, "Location Alert");
-          // Mark message as sent to prevent repeated sending
-          loc.messageSent = true;
-          // Update localStorage with the new state
-          localStorage.setItem("locations", JSON.stringify(locations));
-        }
-      } else {
-        // Reset messageSent flag when user exits the zone
-        if (loc.messageSent) {
-          loc.messageSent = false;
-          localStorage.setItem("locations", JSON.stringify(locations));
-        }
+      if (distance <= loc.radius && loc.message && !loc.messageSent) {
+        sendTestNotification();
+        loc.messageSent = true;
+        localStorage.setItem("locations", JSON.stringify(locations));
+      } else if (distance > loc.radius && loc.messageSent) {
+        loc.messageSent = false;
+        localStorage.setItem("locations", JSON.stringify(locations));
       }
     });
-
-    // Update device silent mode based on location
-    updateDeviceSilentMode(shouldBeSilent);
   };
 
-  // Function to update device silent mode
-  const updateDeviceSilentMode = async (shouldBeSilent: boolean) => {
-    try {
-      const response = await fetch(`${config.apiUrl}/update-silent-mode`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ silent: shouldBeSilent }),
-      });
-
-      const data = await response.json();
-      if (!data.success) {
-        console.error('Failed to update silent mode');
-      }
-    } catch (error) {
-      console.error('Error updating silent mode:', error);
-    }
-  };
-
-  // Handle marker drag event
   const handleMarkerDragEnd = (e: any) => {
     const { lat, lng } = e.target.getLatLng();
     setLocation((prev) => ({ ...prev, latitude: lat, longitude: lng }));
     fetchAddress(lat, lng);
   };
 
-  // Save location
   const saveLocation = () => {
     if (!location.latitude || !location.longitude) {
-      alert("Location coordinates are required.");
-      return;
-    }
-
-    if (location.sendMsg && (!location.recipients || !location.message.trim())) {
-      alert("Recipients and message are required when message sending is enabled.");
+      setError("Location coordinates are required");
       return;
     }
 
     const newLocation = { 
       ...location,
-      messageSent: false // Add flag to track if message has been sent
+      messageSent: false
     };
     const updatedLocations = [...locations, newLocation];
 
     try {
       localStorage.setItem("locations", JSON.stringify(updatedLocations));
       setLocations(updatedLocations);
-      alert("Location saved successfully!");
+      setError(null);
     } catch (error) {
       console.error("Error saving location:", error);
-      alert("Error saving location. Please try again.");
+      setError("Error saving location");
     }
   };
 
   // Test notification function
   const testNotification = async () => {
     try {
-      const result = await sendNotification(
-        "This is a test notification from the geofence app!",
-        "Test Notification"
-      );
+      const result = await sendTestNotification();
       if (result) {
-        alert("Test notification sent successfully!");
+        setError(null);
       } else {
-        alert("Failed to send test notification. Check console for details.");
+        setError("Failed to send test notification");
       }
     } catch (error) {
       console.error("Error sending test notification:", error);
-      alert("Error sending test notification. Check console for details.");
+      setError("Error sending test notification");
     }
   };
 
@@ -263,7 +192,7 @@ const LocationForm: React.FC = () => {
     <div className="form-container">
       <div className="map-container">
         <MapContainer
-          center={[location.latitude, location.longitude]}
+          center={[location.latitude || 0, location.longitude || 0]}
           zoom={15}
           style={{ width: "100%", height: "400px", borderRadius: "8px" }}
           ref={mapRef}
@@ -272,66 +201,100 @@ const LocationForm: React.FC = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-          <Marker position={[location.latitude, location.longitude]} draggable eventHandlers={{ dragend: handleMarkerDragEnd }}>
-            <Popup>Latitude: {location.latitude} <br /> Longitude: {location.longitude}</Popup>
+          <Marker 
+            position={[location.latitude || 0, location.longitude || 0]} 
+            draggable 
+            eventHandlers={{ dragend: handleMarkerDragEnd }}
+          >
+            <Popup>
+              Latitude: {location.latitude} <br /> 
+              Longitude: {location.longitude}
+            </Popup>
           </Marker>
-          <Circle center={[location.latitude, location.longitude]} radius={location.radius} color="blue" />
+          <Circle 
+            center={[location.latitude || 0, location.longitude || 0]} 
+            radius={location.radius} 
+            color="blue" 
+          />
         </MapContainer>
       </div>
+
       <form className="location-form">
-        <Button variant="contained" color="primary" onClick={getCurrentLocation} disabled={loading}>
-          {loading ? <CircularProgress size={24} /> : "Get Current Location"}
-        </Button>
-        
-        {/* Add test notification button */}
-        <Button 
-          variant="outlined" 
-          color="secondary" 
-          onClick={testNotification}
-          style={{ marginLeft: '8px' }}
-        >
-          Test Notification
-        </Button>
+        <div className="button-group">
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={getCurrentLocation} 
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : "Get Current Location"}
+          </Button>
+          
+          <Button 
+            variant="outlined" 
+            color="secondary" 
+            onClick={testNotification}
+          >
+            Test Notification
+          </Button>
+        </div>
 
         {error && <p className="error-message">{error}</p>}
-        <TextField label="Address" value={location.address} variant="outlined" fullWidth disabled margin="normal" />
-        <TextField label="Radius (meters)" type="number" variant="outlined" fullWidth margin="normal"
-          value={location.radius} onChange={(e) => setLocation((prev) => ({ ...prev, radius: parseInt(e.target.value, 10) }))} />
-        <TextField label="Recipients (comma-separated numbers)" value={location.recipients}
-          onChange={(e) => setLocation((prev) => ({ ...prev, recipients: e.target.value }))} variant="outlined" fullWidth margin="normal" />
-        <FormControl fullWidth margin="normal">
-          <InputLabel>Carrier</InputLabel>
-          <Select
-            value={location.carrier}
-            label="Carrier"
-            onChange={(e) => setLocation((prev) => ({ ...prev, carrier: e.target.value }))}
-          >
-            <MenuItem value="tmobile">T-Mobile</MenuItem>
-            <MenuItem value="att">AT&T</MenuItem>
-            <MenuItem value="verizon">Verizon</MenuItem>
-            <MenuItem value="sprint">Sprint</MenuItem>
-          </Select>
-        </FormControl>
-        <TextField label="Message" value={location.message} 
-          onChange={(e) => setLocation((prev) => ({ ...prev, message: e.target.value }))} 
-          variant="outlined" fullWidth margin="normal" />
-        <div className="checkbox-group">
-          <FormControlLabel 
-            control={<Checkbox 
-              checked={location.sendMsg} 
-              onChange={(e) => setLocation((prev) => ({ ...prev, sendMsg: e.target.checked }))} 
-            />} 
-            label="Send Notification on Entry" 
-          />
-          <FormControlLabel 
-            control={<Checkbox 
+
+        <TextField 
+          label="Address" 
+          value={location.address} 
+          variant="outlined" 
+          fullWidth 
+          disabled 
+          margin="normal" 
+        />
+
+        <TextField 
+          label="Radius (meters)" 
+          type="number" 
+          variant="outlined" 
+          fullWidth 
+          margin="normal"
+          value={location.radius} 
+          onChange={(e) => setLocation((prev) => ({ 
+            ...prev, 
+            radius: parseInt(e.target.value, 10) 
+          }))} 
+        />
+
+        <TextField 
+          label="Notification Message" 
+          value={location.message} 
+          onChange={(e) => setLocation((prev) => ({ 
+            ...prev, 
+            message: e.target.value 
+          }))} 
+          variant="outlined" 
+          fullWidth 
+          margin="normal" 
+        />
+
+        <FormControlLabel 
+          control={
+            <Checkbox 
               checked={location.silence} 
-              onChange={(e) => setLocation((prev) => ({ ...prev, silence: e.target.checked }))} 
-            />} 
-            label="Enable Silent Mode in this zone" 
-          />
-        </div>
-        <Button type="button" variant="contained" color="secondary" onClick={saveLocation}>
+              onChange={(e) => setLocation((prev) => ({ 
+                ...prev, 
+                silence: e.target.checked 
+              }))} 
+            />
+          } 
+          label="Enable Silent Mode in this zone" 
+        />
+
+        <Button 
+          type="button" 
+          variant="contained" 
+          color="secondary" 
+          onClick={saveLocation}
+          fullWidth
+        >
           Save Location
         </Button>
       </form>

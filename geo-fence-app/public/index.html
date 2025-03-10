@@ -30,13 +30,25 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <link 
-  rel="stylesheet" 
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
-  crossorigin=""
+      rel="stylesheet" 
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+      crossorigin=""
     />
 
-  
-
+    <!-- Register service worker for notifications -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            .then(registration => {
+              console.log('Service Worker registered:', registration);
+            })
+            .catch(error => {
+              console.error('Service Worker registration failed:', error);
+            });
+        });
+      }
+    </script>
 
     <!--
       This HTML file is a template.

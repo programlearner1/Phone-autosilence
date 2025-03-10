@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { getMessaging } from "firebase/messaging";
 
 // Validate Firebase configuration
 const validateFirebaseConfig = (config) => {
@@ -38,13 +38,19 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let app;
-let messaging;
+let messaging = null;
 
 try {
   validateFirebaseConfig(firebaseConfig);
   app = initializeApp(firebaseConfig);
-  messaging = getMessaging(app);
-  console.log('✅ Firebase initialized successfully');
+  
+  // Initialize Firebase Cloud Messaging
+  if ('serviceWorker' in navigator) {
+    messaging = getMessaging(app);
+    console.log('✅ Firebase Cloud Messaging initialized');
+  } else {
+    console.warn('⚠️ Service workers are not supported by this browser');
+  }
 } catch (error) {
   console.error('❌ Firebase initialization error:', error);
   throw error;
