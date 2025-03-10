@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getMessaging } from "firebase/messaging";
+import { getMessaging, getToken as getMessagingToken } from "firebase/messaging";
 
 // Validate Firebase configuration
 const validateFirebaseConfig = (config) => {
@@ -78,16 +78,15 @@ export const requestNotificationPermission = async () => {
       throw new Error('Invalid VAPID key format');
     }
 
-    // Ensure service worker is registered before getting token
-    const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    console.log('✅ Service Worker registered successfully');
+    // Request notification permission
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      throw new Error('Notification permission denied');
+    }
 
     // Get the token with proper error handling
     try {
-      const currentToken = await getToken(messaging, { 
-        vapidKey,
-        serviceWorkerRegistration
-      });
+      const currentToken = await getMessagingToken(messaging, { vapidKey });
       
       if (currentToken) {
         console.log("✅ FCM Token obtained");
@@ -111,4 +110,4 @@ export const requestNotificationPermission = async () => {
   }
 };
 
-export { messaging, getToken, onMessage };
+export { messaging };

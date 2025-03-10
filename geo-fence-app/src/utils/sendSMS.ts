@@ -9,6 +9,12 @@ export const getFCMToken = async () => {
       throw new Error('VAPID key is not configured');
     }
 
+    // Request notification permission if not granted
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      throw new Error('Notification permission denied');
+    }
+
     const currentToken = await getToken(messaging, {
       vapidKey: vapidKey
     });

@@ -1,24 +1,27 @@
-import { messaging, onMessage } from '../firebase';
+import { getMessaging, onMessage as onFirebaseMessage } from 'firebase/messaging';
+import { messaging } from '../firebase';
 
 class FCMService {
   private static instance: FCMService;
   private messageHandlers: ((payload: any) => void)[] = [];
 
   private constructor() {
-    // Initialize message listener
-    onMessage(messaging, (payload) => {
-      console.log('Received foreground message:', payload);
-      this.messageHandlers.forEach(handler => handler(payload));
-      
-      // Show notification if app is in foreground
-      if (Notification.permission === 'granted') {
-        const { title, body } = payload.notification || {};
-        new Notification(title || 'New Message', {
-          body: body || '',
-          icon: '/firebase-logo.png'
-        });
-      }
-    });
+    if (messaging) {
+      // Initialize message listener
+      onFirebaseMessage(messaging, (payload) => {
+        console.log('Received foreground message:', payload);
+        this.messageHandlers.forEach(handler => handler(payload));
+        
+        // Show notification if app is in foreground
+        if (Notification.permission === 'granted' && payload.notification) {
+          const { title, body } = payload.notification;
+          new Notification(title || 'New Message', {
+            body: body || '',
+            icon: '/firebase-logo.png'
+          });
+        }
+      });
+    }
   }
 
   public static getInstance(): FCMService {
