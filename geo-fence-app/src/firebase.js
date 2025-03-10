@@ -15,6 +15,11 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const messaging = getMessaging(app);
 
+// Validate VAPID key format
+const isValidVapidKey = (key) => {
+  return /^[A-Za-z0-9_-]+$/.test(key);
+};
+
 // Request permission for notifications
 export const requestNotificationPermission = async () => {
   try {
@@ -23,9 +28,14 @@ export const requestNotificationPermission = async () => {
       throw new Error('VAPID key is not configured');
     }
 
+    if (!isValidVapidKey(vapidKey)) {
+      throw new Error('Invalid VAPID key format. Please check your environment variables.');
+    }
+
     // Ensure service worker is registered before getting token
     const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    
+    console.log('✅ Service Worker registered successfully');
+
     // Get the token with proper error handling
     try {
       const currentToken = await getToken(messaging, { 
@@ -42,8 +52,9 @@ export const requestNotificationPermission = async () => {
       }
     } catch (tokenError) {
       console.error("❌ Error getting token:", tokenError);
-      // Check if the error is related to the VAPID key
-      if (tokenError.message?.includes('atob')) {
+      if (tokenError.code === 'messaging/failed-service-worker-registration') {
+        console.error("❌ Service Worker registration failed");
+      } else if (tokenError.message?.includes('atob')) {
         console.error("❌ Invalid VAPID key format. Please check your VAPID key in environment variables.");
       }
       return null;
