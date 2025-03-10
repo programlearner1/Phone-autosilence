@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Button, TextField, Checkbox, FormControlLabel, CircularProgress } from "@mui/material";
+import { Button, TextField, Checkbox, FormControlLabel, CircularProgress, Select, MenuItem, InputLabel, FormControl } from "@mui/material";
 import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "./LocationForm.css";
 import axios from "axios";
-import { sendSMS } from "../utils/sendSMS";
+import { sendNotification } from "../utils/sendSMS";
+import config from "../config";
 
 
 
@@ -33,6 +34,7 @@ const LocationForm: React.FC = () => {
     message: "",
     recipients: "",
     messageSent: false,
+    carrier: "tmobile", // Default carrier
   });
 
   const [locations, setLocations] = useState<any[]>([]);
@@ -158,9 +160,9 @@ const LocationForm: React.FC = () => {
           shouldBeSilent = true;
         }
         
-        // Send message if configured and not already sent
+        // Send notification if configured and not already sent
         if (loc.sendMsg && loc.message && !loc.messageSent) {
-          sendSMS([loc.recipients], loc.message);
+          sendNotification(loc.message, "Location Alert");
           // Mark message as sent to prevent repeated sending
           loc.messageSent = true;
           // Update localStorage with the new state
@@ -182,7 +184,7 @@ const LocationForm: React.FC = () => {
   // Function to update device silent mode
   const updateDeviceSilentMode = async (shouldBeSilent: boolean) => {
     try {
-      const response = await fetch('http://localhost:5000/update-silent-mode', {
+      const response = await fetch(`${config.apiUrl}/update-silent-mode`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -263,14 +265,29 @@ const LocationForm: React.FC = () => {
           value={location.radius} onChange={(e) => setLocation((prev) => ({ ...prev, radius: parseInt(e.target.value, 10) }))} />
         <TextField label="Recipients (comma-separated numbers)" value={location.recipients}
           onChange={(e) => setLocation((prev) => ({ ...prev, recipients: e.target.value }))} variant="outlined" fullWidth margin="normal" />
-        <TextField label="Custom Message" value={location.message} onChange={(e) => setLocation((prev) => ({ ...prev, message: e.target.value }))} variant="outlined" fullWidth margin="normal" />
+        <FormControl fullWidth margin="normal">
+          <InputLabel>Carrier</InputLabel>
+          <Select
+            value={location.carrier}
+            label="Carrier"
+            onChange={(e) => setLocation((prev) => ({ ...prev, carrier: e.target.value }))}
+          >
+            <MenuItem value="tmobile">T-Mobile</MenuItem>
+            <MenuItem value="att">AT&T</MenuItem>
+            <MenuItem value="verizon">Verizon</MenuItem>
+            <MenuItem value="sprint">Sprint</MenuItem>
+          </Select>
+        </FormControl>
+        <TextField label="Message" value={location.message} 
+          onChange={(e) => setLocation((prev) => ({ ...prev, message: e.target.value }))} 
+          variant="outlined" fullWidth margin="normal" />
         <div className="checkbox-group">
           <FormControlLabel 
             control={<Checkbox 
               checked={location.sendMsg} 
               onChange={(e) => setLocation((prev) => ({ ...prev, sendMsg: e.target.checked }))} 
             />} 
-            label="Send Message on Entry" 
+            label="Send Notification on Entry" 
           />
           <FormControlLabel 
             control={<Checkbox 

@@ -1,5 +1,8 @@
 {
   "devDependencies": {
     "@types/cors": "^2.8.17"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.2.0"
   }
 }
