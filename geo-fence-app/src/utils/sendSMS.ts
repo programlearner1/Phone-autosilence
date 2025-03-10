@@ -18,8 +18,13 @@ const messaging = getMessaging(app);
 // Get FCM token
 export const getFCMToken = async () => {
   try {
+    const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
+    if (!vapidKey) {
+      throw new Error('VAPID key is not configured');
+    }
+
     const currentToken = await getToken(messaging, {
-      vapidKey: "BGHoeP63LEzhx1a66xfD2b2q2PtcjZDV8xVO1ZU2D-P2dvQK2MkBYSqbH2lyU8QSKgfB7o7ktnBCh2iP66UHPdU"
+      vapidKey: vapidKey
     });
     if (currentToken) {
       return currentToken;
